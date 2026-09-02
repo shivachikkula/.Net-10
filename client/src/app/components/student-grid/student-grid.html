@@ -1,0 +1,53 @@
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+  <table class="min-w-full divide-y divide-slate-200">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Name</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Email</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Department</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Date of birth</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">GPA</th>
+        <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      @if (loading()) {
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">Loading students…</td>
+        </tr>
+      } @else if (students().length === 0) {
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">
+            No students yet. Click "Add student" to create one.
+          </td>
+        </tr>
+      } @else {
+        @for (student of students(); track student.id) {
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ student.fullName }}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">{{ student.email }}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">{{ student.department || '—' }}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">{{ student.dateOfBirth }}</td>
+            <td class="px-4 py-3 text-right text-sm text-slate-600">{{ student.gpa.toFixed(2) }}</td>
+            <td class="px-4 py-3 text-right text-sm">
+              <button
+                type="button"
+                (click)="edit.emit(student)"
+                class="mr-3 font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                (click)="remove.emit(student)"
+                class="font-medium text-red-600 hover:text-red-500"
+              >
+                Remove
+              </button>
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>

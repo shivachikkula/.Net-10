@@ -1,0 +1,39 @@
+<div class="min-h-screen bg-slate-100">
+  <div class="mx-auto max-w-5xl px-4 py-10">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Students</h1>
+        <p class="mt-1 text-sm text-slate-500">Create, edit, and remove student records.</p>
+      </div>
+      <button
+        type="button"
+        (click)="openAddDialog()"
+        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
+      >
+        Add student
+      </button>
+    </div>
+
+    @if (studentService.error()) {
+      <p class="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{{ studentService.error() }}</p>
+    }
+
+    <div class="mt-6">
+      <app-student-grid
+        [students]="studentService.students()"
+        [loading]="studentService.loading()"
+        (edit)="openEditDialog($event)"
+        (remove)="removeStudent($event)"
+      />
+    </div>
+  </div>
+
+  @if (dialogOpen()) {
+    <app-student-form-dialog
+      [student]="editingStudent()"
+      [error]="formError()"
+      (saved)="saveStudent($event)"
+      (closed)="closeDialog()"
+    />
+  }
+</div>

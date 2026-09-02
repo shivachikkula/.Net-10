@@ -137,6 +137,26 @@ public class StudentEndpointsTests : IClassFixture<StudentApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task DeleteStudent_ExistingId_RemovesStudent()
+    {
+        var created = await CreateAsync(NewStudentRequest());
+
+        var response = await _client.DeleteAsync($"/api/students/{created.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        var getResponse = await _client.GetAsync($"/api/students/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteStudent_UnknownId_ReturnsNotFound()
+    {
+        var response = await _client.DeleteAsync("/api/students/999999");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private async Task<StudentResponse> CreateAsync(CreateStudentRequest request)
     {
         var response = await _client.PostAsJsonAsync("/api/students", request);

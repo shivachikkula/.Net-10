@@ -1,0 +1,80 @@
+name: Code scanning (CodeQL)
+
+# CodeQL is GitHub's own static analysis engine — free for public repositories
+# (this one included) and listed on the GitHub Marketplace as the "CodeQL"
+# action. It scans the .NET API (csharp) and the Angular client
+# (javascript-typescript), publishes findings to the Security tab and as
+# pull request annotations, and — since CodeQL itself doesn't fail a build on
+# findings — the "Fail if issues were found" step below fails the job when
+# the scan produced any result.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      # CodeQL's generic autobuilder doesn't reliably recognize the newer
+      # .slnx solution format, so the C# leg builds explicitly instead.
+      - name: Build (C#)
+        if: matrix.language == 'csharp'
+        run: |
+          dotnet restore
+          dotnet build --configuration Release --no-restore
+
+      - name: Perform CodeQL analysis
+        id: analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+          upload: always
+
+      - name: Fail the build if issues were found
+        run: |
+          total=0
+          for f in "${{ steps.analyze.outputs.sarif-output }}"/*.sarif; do
+            [ -e "$f" ] || continue
+            count=$(jq '[.runs[].results[]] | length' "$f")
+            echo "$f: $count result(s)"
+            total=$((total + count))
+          done
+
+          echo "Total CodeQL results for ${{ matrix.language }}: $total"
+
+          if [ "$total" -gt 0 ]; then
+            echo "::error::CodeQL found $total issue(s) in ${{ matrix.language }}. See the Security tab for details."
+            exit 1
+          fi

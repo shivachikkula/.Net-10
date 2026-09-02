@@ -1,5 +1,5 @@
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ChangeDetectionStrategy, Component, effect, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, effect, input, output } from '@angular/core';
 import { Student, StudentFormValue } from '../../models/student';
 
 @Component({
@@ -64,5 +64,10 @@ export class StudentFormDialog {
 
   cancel(): void {
     this.closed.emit();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.cancel();
   }
 }

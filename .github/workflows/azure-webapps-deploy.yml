@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "StudentApi.slnx"
+      - ".github/workflows/azure-webapps-deploy.yml"
   workflow_dispatch:
 
 env:

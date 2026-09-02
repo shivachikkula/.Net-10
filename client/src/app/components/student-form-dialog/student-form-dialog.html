@@ -1,14 +1,12 @@
-<div
-  class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
-  (click)="cancel()"
-  (keydown.escape)="cancel()"
->
-  <div
-    class="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl"
-    role="dialog"
-    aria-modal="true"
-    (click)="$event.stopPropagation()"
-  >
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+  <button
+    type="button"
+    class="fixed inset-0 h-full w-full cursor-default bg-slate-900/50"
+    aria-label="Close dialog"
+    (click)="cancel()"
+  ></button>
+
+  <div class="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl" role="dialog" aria-modal="true">
     <h2 class="text-lg font-semibold text-slate-900">
       {{ isEditMode ? 'Edit student' : 'Add student' }}
     </h2>

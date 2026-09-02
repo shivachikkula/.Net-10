@@ -66,3 +66,18 @@ dotnet test
 ```
 
 Integration tests swap in EF Core's InMemory provider (see `StudentApiFactory`) so they run without a real SQL Server instance.
+
+## CI/CD: deploy to Azure App Service
+
+`.github/workflows/azure-webapps-deploy.yml` builds, tests, and publishes `src/StudentApi.Api`, then deploys it to an Azure App Service using a publish profile. It runs on every push to `main` and can also be triggered manually (Actions tab → the workflow → **Run workflow**).
+
+Before it can deploy, set these in the repo's **Settings → Secrets and variables → Actions**:
+
+- **Variables** tab → New repository variable:
+  - `AZURE_WEBAPP_NAME` = the name of your Azure App Service (e.g. `student-api-prod`)
+- **Secrets** tab → New repository secret:
+  - `AZURE_WEBAPP_PUBLISH_PROFILE` = the full contents of the publish profile downloaded from Azure Portal → your App Service → **Overview → Get publish profile** (or `az webapp deployment list-publishing-profiles --xml`)
+
+Notes:
+- The App Service's stack should be set to .NET 10 (or "framework-dependent" hosting on a runtime that supports it); if your App Service can't yet run .NET 10, publish self-contained instead by adding `--self-contained true -r linux-x64` (or `win-x64`) to the `dotnet publish` step.
+- The workflow deploys straight to production (no slot). Add a `slot-name` input to the `azure/webapps-deploy` step if you use deployment slots.

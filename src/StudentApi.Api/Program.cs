@@ -18,6 +18,21 @@ if (!builder.Environment.IsEnvironment("Testing"))
 // endpoint parameters without hand-written validation filters.
 builder.Services.AddValidation();
 
+const string ClientCorsPolicy = "Client";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(ClientCorsPolicy, policy =>
+    {
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? ["http://localhost:4200"];
+
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -29,6 +44,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(ClientCorsPolicy);
 
 app.MapGroup("/api/students")
     .WithTags("Students")

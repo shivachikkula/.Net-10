@@ -26,6 +26,10 @@ public static class StudentEndpoints
             .WithName("UpdateStudent")
             .WithSummary("Updates an existing student.");
 
+        group.MapDelete("/{id:int}", DeleteAsync)
+            .WithName("DeleteStudent")
+            .WithSummary("Deletes a student.");
+
         return group;
     }
 
@@ -95,5 +99,21 @@ public static class StudentEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         return TypedResults.Ok(student.ToResponse());
+    }
+
+    private static async Task<Results<NoContent, NotFound>> DeleteAsync(
+        int id, StudentDbContext db, CancellationToken cancellationToken)
+    {
+        var student = await db.Students.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+
+        if (student is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        db.Students.Remove(student);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return TypedResults.NoContent();
     }
 }

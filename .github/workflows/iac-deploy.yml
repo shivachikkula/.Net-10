@@ -1,0 +1,104 @@
+name: Deploy Azure infrastructure (Bicep)
+
+# Deploys iac/main.bicep — a resource group, a shared Linux App Service Plan,
+# and the API + client Web Apps — using the parameters file for the chosen
+# environment (iac/parameters/<environment>.bicepparam).
+#
+# This needs real Azure RBAC (it creates/updates resources), unlike the app
+# deploy workflows which only need a publish profile. Auth is via OIDC
+# federated credentials — no client secret is stored. See the "Infrastructure
+# as Code" section in README.md for one-time setup.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "iac/**"
+      - ".github/workflows/iac-deploy.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "iac/**"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Parameters file to use (iac/parameters/<environment>.bicepparam)"
+        type: string
+        default: dev
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # Runs on every PR that touches iac/** and on manual dispatch: shows what
+  # would change without applying anything.
+  what-if:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-if
+        run: |
+          az deployment sub what-if \
+            --name "iac-${{ inputs.environment || 'dev' }}-${{ github.run_number }}" \
+            --location "${{ vars.AZURE_LOCATION || 'eastus' }}" \
+            --template-file iac/main.bicep \
+            --parameters "iac/parameters/${{ inputs.environment || 'dev' }}.bicepparam"
+
+  # Runs on push to main (auto-deploys "dev") and on manual dispatch for any
+  # environment. Gate staging/prod behind a required reviewer by adding a
+  # protection rule to that GitHub Environment in repo settings.
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    outputs:
+      api-host: ${{ steps.outputs.outputs.api-host }}
+      client-host: ${{ steps.outputs.outputs.client-host }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy
+        id: deploy
+        run: |
+          az deployment sub create \
+            --name "iac-${{ inputs.environment || 'dev' }}-${{ github.run_number }}" \
+            --location "${{ vars.AZURE_LOCATION || 'eastus' }}" \
+            --template-file iac/main.bicep \
+            --parameters "iac/parameters/${{ inputs.environment || 'dev' }}.bicepparam"
+
+      - name: Read outputs
+        id: outputs
+        run: |
+          api_host=$(az deployment sub show \
+            --name "iac-${{ inputs.environment || 'dev' }}-${{ github.run_number }}" \
+            --query "properties.outputs.apiApp.value.defaultHostName" -o tsv)
+          client_host=$(az deployment sub show \
+            --name "iac-${{ inputs.environment || 'dev' }}-${{ github.run_number }}" \
+            --query "properties.outputs.clientApp.value.defaultHostName" -o tsv)
+
+          echo "api-host=$api_host" >> "$GITHUB_OUTPUT"
+          echo "client-host=$client_host" >> "$GITHUB_OUTPUT"
+
+          echo "### Deployed hosts" >> "$GITHUB_STEP_SUMMARY"
+          echo "- API: https://$api_host" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Client: https://$client_host" >> "$GITHUB_STEP_SUMMARY"

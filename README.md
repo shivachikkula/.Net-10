@@ -14,6 +14,7 @@ src/StudentApi.Api/          ASP.NET Core minimal API project
   Migrations/                 EF Core migrations
 tests/StudentApi.Tests/       xUnit integration tests (WebApplicationFactory + EF InMemory)
 client/                       Angular 22 + Tailwind CSS front end (see below)
+iac/                          Reusable Bicep IaC: resource group + App Service Plan + Web Apps (see iac/README.md)
 ```
 
 ## C# 14 / .NET 10 features used
@@ -109,6 +110,14 @@ cd client
 npm run lint        # ESLint (typescript-eslint + angular-eslint)
 npm test             # Vitest, via `ng test`
 ```
+
+## Infrastructure as Code (`iac/`)
+
+The resource group, App Service Plan, and the two Web Apps the workflows below deploy *into*
+are themselves defined as reusable Bicep modules in `iac/` — see **[iac/README.md](iac/README.md)**
+for the full guide (running it locally, adding another app, the GitHub Actions workflow that
+applies it, and the one-time Azure login setup). Provision the infrastructure first; then point
+the app-deploy workflows below at the app names it created.
 
 ## CI/CD: deploy to Azure App Service
 
